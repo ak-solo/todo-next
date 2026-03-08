@@ -387,3 +387,74 @@ describe("進捗率表示", () => {
     expect(screen.getByText("1 / 3 完了")).toBeInTheDocument();
   });
 });
+
+// ----------------------------------------
+// タスク編集
+// ----------------------------------------
+describe("タスク編集", () => {
+  it("タスクテキストをダブルクリックすると編集モードになる", async () => {
+    const user = userEvent.setup();
+    render(<TodoApp />);
+
+    await user.type(screen.getByPlaceholderText("新しいタスクを入力..."), "元のテキスト{Enter}");
+    await user.dblClick(screen.getByText("元のテキスト"));
+
+    expect(screen.getByRole("textbox", { name: "タスクを編集" })).toBeInTheDocument();
+  });
+
+  it("編集後 Enter で内容が更新される", async () => {
+    const user = userEvent.setup();
+    render(<TodoApp />);
+
+    await user.type(screen.getByPlaceholderText("新しいタスクを入力..."), "変更前{Enter}");
+    await user.dblClick(screen.getByText("変更前"));
+
+    const editInput = screen.getByRole("textbox", { name: "タスクを編集" });
+    await user.clear(editInput);
+    await user.type(editInput, "変更後{Enter}");
+
+    expect(screen.queryByText("変更前")).not.toBeInTheDocument();
+    expect(screen.getByText("変更後")).toBeInTheDocument();
+  });
+
+  it("編集後 Escape でキャンセルされ元のテキストが保持される", async () => {
+    const user = userEvent.setup();
+    render(<TodoApp />);
+
+    await user.type(screen.getByPlaceholderText("新しいタスクを入力..."), "元のテキスト{Enter}");
+    await user.dblClick(screen.getByText("元のテキスト"));
+
+    const editInput = screen.getByRole("textbox", { name: "タスクを編集" });
+    await user.clear(editInput);
+    await user.type(editInput, "途中の入力{Escape}");
+
+    expect(screen.getByText("元のテキスト")).toBeInTheDocument();
+  });
+
+  it("空白のみにして Enter しても更新されず元のテキストが保持される", async () => {
+    const user = userEvent.setup();
+    render(<TodoApp />);
+
+    await user.type(screen.getByPlaceholderText("新しいタスクを入力..."), "元のテキスト{Enter}");
+    await user.dblClick(screen.getByText("元のテキスト"));
+
+    const editInput = screen.getByRole("textbox", { name: "タスクを編集" });
+    await user.clear(editInput);
+    await user.type(editInput, "   {Enter}");
+
+    expect(screen.getByText("元のテキスト")).toBeInTheDocument();
+  });
+
+  it("完了済みタスクはダブルクリックしても編集モードにならない", async () => {
+    const user = userEvent.setup();
+    render(<TodoApp />);
+
+    await user.type(screen.getByPlaceholderText("新しいタスクを入力..."), "完了タスク{Enter}");
+
+    const listItem = screen.getByText("完了タスク").closest("li")!;
+    await user.click(within(listItem).getAllByRole("button")[0]); // 完了にする
+    await user.dblClick(screen.getByText("完了タスク"));
+
+    expect(screen.queryByRole("textbox", { name: "タスクを編集" })).not.toBeInTheDocument();
+  });
+});

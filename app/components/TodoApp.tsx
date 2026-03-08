@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type Filter = "all" | "active" | "completed";
 
@@ -14,6 +14,9 @@ export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [input, setInput] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("todos");
@@ -39,6 +42,26 @@ export default function TodoApp() {
 
   const deleteTodo = (id: number) => {
     setTodos((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const startEdit = (todo: Todo) => {
+    setEditingId(todo.id);
+    setEditingText(todo.text);
+    setTimeout(() => editInputRef.current?.focus(), 0);
+  };
+
+  const commitEdit = () => {
+    const text = editingText.trim();
+    if (text && editingId !== null) {
+      setTodos((prev) =>
+        prev.map((t) => (t.id === editingId ? { ...t, text } : t))
+      );
+    }
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
   };
 
   const clearCompleted = () => {
@@ -139,15 +162,32 @@ export default function TodoApp() {
                       </svg>
                     )}
                   </button>
-                  <span
-                    className={`flex-1 text-sm ${
-                      todo.completed
-                        ? "line-through text-gray-400"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {todo.text}
-                  </span>
+                  {editingId === todo.id ? (
+                    <input
+                      ref={editInputRef}
+                      type="text"
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitEdit();
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                      onBlur={commitEdit}
+                      className="flex-1 text-sm text-gray-800 border-b border-indigo-400 outline-none bg-transparent"
+                      aria-label="タスクを編集"
+                    />
+                  ) : (
+                    <span
+                      onDoubleClick={() => !todo.completed && startEdit(todo)}
+                      className={`flex-1 text-sm ${
+                        todo.completed
+                          ? "line-through text-gray-400"
+                          : "text-gray-700 cursor-text"
+                      }`}
+                    >
+                      {todo.text}
+                    </span>
+                  )}
                   <button
                     onClick={() => deleteTodo(todo.id)}
                     className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition text-lg leading-none"
