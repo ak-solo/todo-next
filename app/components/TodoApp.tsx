@@ -52,6 +52,8 @@ export default function TodoApp() {
   });
 
   const activeCount = todos.filter((t) => !t.completed).length;
+  const completedCount = todos.length - activeCount;
+  const progressPercent = todos.length === 0 ? 0 : Math.round((completedCount / todos.length) * 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-100 to-indigo-100 flex items-start justify-center pt-20 px-4">
@@ -77,6 +79,26 @@ export default function TodoApp() {
             追加
           </button>
         </div>
+
+        {/* Progress */}
+        {todos.length > 0 && (
+          <div className="mb-4 rounded-2xl bg-white shadow-sm px-4 py-3">
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+              <span>{completedCount} / {todos.length} 完了</span>
+              <span className="font-semibold text-indigo-600">{progressPercent}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-indigo-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+                role="progressbar"
+                aria-valuenow={progressPercent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              />
+            </div>
+          </div>
+        )}
 
         {/* List */}
         <div className="rounded-2xl bg-white shadow-md overflow-hidden">

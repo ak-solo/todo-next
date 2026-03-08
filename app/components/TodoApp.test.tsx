@@ -336,3 +336,54 @@ describe("localStorage への保存", () => {
     expect(saved[0].completed).toBe(true);
   });
 });
+
+// ----------------------------------------
+// 進捗率表示
+// ----------------------------------------
+describe("進捗率表示", () => {
+  it("タスクが0件のときプログレスバーが表示されない", () => {
+    render(<TodoApp />);
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  it("タスクが1件あり未完了のとき 0% が表示される", async () => {
+    const user = userEvent.setup();
+    render(<TodoApp />);
+
+    await user.type(screen.getByPlaceholderText("新しいタスクを入力..."), "タスク{Enter}");
+
+    expect(screen.getByText("0%")).toBeInTheDocument();
+    expect(screen.getByText("0 / 1 完了")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
+  });
+
+  it("全タスクを完了すると 100% が表示される", async () => {
+    const user = userEvent.setup();
+    render(<TodoApp />);
+
+    await user.type(screen.getByPlaceholderText("新しいタスクを入力..."), "タスク{Enter}");
+
+    const listItem = screen.getByText("タスク").closest("li")!;
+    await user.click(within(listItem).getAllByRole("button")[0]);
+
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.getByText("1 / 1 完了")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100");
+  });
+
+  it("3件中1件完了で 33% が表示される", async () => {
+    const user = userEvent.setup();
+    render(<TodoApp />);
+
+    const input = screen.getByPlaceholderText("新しいタスクを入力...");
+    await user.type(input, "タスク1{Enter}");
+    await user.type(input, "タスク2{Enter}");
+    await user.type(input, "タスク3{Enter}");
+
+    const listItem = screen.getByText("タスク1").closest("li")!;
+    await user.click(within(listItem).getAllByRole("button")[0]);
+
+    expect(screen.getByText("33%")).toBeInTheDocument();
+    expect(screen.getByText("1 / 3 完了")).toBeInTheDocument();
+  });
+});
